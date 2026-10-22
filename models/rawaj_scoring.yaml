@@ -1,0 +1,430 @@
+zones:
+  - id: public
+    trust: 0
+  - id: perimeter
+    trust: 1
+  - id: internal
+    trust: 2
+  - id: secure
+    trust: 3
+  - id: vault
+    trust: 4
+
+elements:
+  - id: user
+    kind: external_entity
+    zone: public
+  - id: analyst
+    kind: external_entity
+    zone: perimeter
+  - id: api_gateway
+    kind: process
+    zone: perimeter
+  - id: scoring_engine
+    kind: process
+    zone: internal
+  - id: profile_db
+    kind: data_store
+    zone: secure
+    holds_pii: true
+  - id: case_db
+    kind: data_store
+    zone: secure
+  - id: audit_log
+    kind: data_store
+    zone: vault
+    is_log: true
+  - id: external_bureau
+    kind: external_entity
+    zone: public
+  - id: notification_service
+    kind: process
+    zone: internal
+
+flows:
+  - id: f01
+    source: user
+    target: api_gateway
+    protocol: https
+    authenticated: true
+  - id: f02
+    source: api_gateway
+    target: scoring_engine
+    protocol: mTLS
+    authenticated: true
+  - id: f03
+    source: scoring_engine
+    target: profile_db
+    protocol: tls
+    authenticated: true
+  - id: f04
+    source: scoring_engine
+    target: case_db
+    protocol: tls
+    authenticated: true
+  - id: f05
+    source: scoring_engine
+    target: audit_log
+    protocol: tls
+    authenticated: true
+  - id: f06
+    source: analyst
+    target: api_gateway
+    protocol: https
+    authenticated: true
+  - id: f07
+    source: scoring_engine
+    target: external_bureau
+    protocol: https
+    authenticated: true
+  - id: f08
+    source: scoring_engine
+    target: notification_service
+    protocol: mTLS
+    authenticated: true
+
+threats:
+  - id: t01
+    target: f01
+    category: T
+    title: Unauthorized interception of public API requests
+    likelihood: 3
+    impact: 3
+    status: open
+  - id: t02
+    target: f02
+    category: T
+    title: Man in the middle attack between gateway and engine
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t03
+    target: profile_db
+    category: I
+    title: Unauthorized data disclosure of sensitive user profiles
+    likelihood: 3
+    impact: 5
+    status: open
+  - id: t04
+    target: user
+    category: S
+    title: Spoofing user identity via stolen session tokens
+    likelihood: 3
+    impact: 4
+    status: open
+  - id: t05
+    target: user
+    category: R
+    title: User repudiation of submitted credit scoring requests
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t06
+    target: analyst
+    category: S
+    title: Spoofing analyst credentials to access backend records
+    likelihood: 3
+    impact: 4
+    status: open
+  - id: t07
+    target: analyst
+    category: R
+    title: Analyst repudiation of case modification actions performed
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t08
+    target: f06
+    category: T
+    title: Tampering with analyst request payloads sent to gateway
+    likelihood: 3
+    impact: 4
+    status: open
+  - id: t09
+    target: f06
+    category: I
+    title: Information disclosure across analyst console communication
+    likelihood: 3
+    impact: 4
+    status: open
+  - id: t10
+    target: f06
+    category: D
+    title: Denial of service targeting analyst gateway connectivity
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t11
+    target: external_bureau
+    category: S
+    title: Spoofing external credit bureau response payloads maliciously
+    likelihood: 3
+    impact: 4
+    status: open
+  - id: t12
+    target: external_bureau
+    category: R
+    title: External credit bureau repudiation of transmitted score data
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t13
+    target: f07
+    category: T
+    title: Tampering with external credit bureau communication channel
+    likelihood: 3
+    impact: 4
+    status: open
+  - id: t14
+    target: f07
+    category: I
+    title: Information disclosure during external bureau data exchange
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t15
+    target: f07
+    category: D
+    title: Denial of service against external bureau API endpoints
+    likelihood: 2
+    impact: 3
+    status: open
+  # التهديدات الشاملة لتغطية كافة الفجوات المتبقية
+  - id: t16
+    target: api_gateway
+    category: S
+    title: Spoofing API gateway ingress endpoints by malicious actors
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t17
+    target: api_gateway
+    category: T
+    title: Tampering with API gateway proxy routing configurations
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t18
+    target: api_gateway
+    category: R
+    title: Repudiation of transaction logs handled by API gateway
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t19
+    target: api_gateway
+    category: I
+    title: Information disclosure through API gateway debug headers
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t20
+    target: api_gateway
+    category: D
+    title: Denial of service attack overwhelming API gateway capacity
+    likelihood: 3
+    impact: 4
+    status: open
+  - id: t21
+    target: api_gateway
+    category: E
+    title: Elevation of privilege exploiting API gateway routing flaws
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t22
+    target: audit_log
+    category: T
+    title: Tampering with immutable security audit log entries
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t23
+    target: audit_log
+    category: R
+    title: Repudiation of recorded security events in audit logs
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t24
+    target: audit_log
+    category: I
+    title: Information disclosure of sensitive audit trail records
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t25
+    target: audit_log
+    category: D
+    title: Denial of service filling audit log storage capacity
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t26
+    target: case_db
+    category: T
+    title: Tampering with case management database persistent records
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t27
+    target: case_db
+    category: I
+    title: Information disclosure of unauthorized case files stored
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t28
+    target: case_db
+    category: D
+    title: Denial of service locking case database transaction tables
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t29
+    target: f01
+    category: I
+    title: Information disclosure during public client request transit
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t30
+    target: f01
+    category: D
+    title: Denial of service flooding public client request channels
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t31
+    target: f02
+    category: I
+    title: Information disclosure across gateway and engine channel
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t32
+    target: f02
+    category: D
+    title: Denial of service disrupting gateway to engine communication
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t33
+    target: f03
+    category: T
+    title: Tampering with data payload flowing to profile database
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t34
+    target: f03
+    category: I
+    title: Information disclosure in profile database data stream
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t35
+    target: f03
+    category: D
+    title: Denial of service blocking profile database data flow
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t36
+    target: f04
+    category: T
+    title: Tampering with data stream directed to case database
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t37
+    target: f04
+    category: I
+    title: Information disclosure during case database transmission
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t38
+    target: f04
+    category: D
+    title: Denial of service disrupting case database data flow
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t39
+    target: f05
+    category: T
+    title: Tampering with audit log telemetry transmission channel
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t40
+    target: f05
+    category: I
+    title: Information disclosure of audit telemetry in transit
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t41
+    target: f05
+    category: D
+    title: Denial of service halting audit log data transmission
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t42
+    target: profile_db
+    category: T
+    title: Tampering with profile database records and attributes
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t43
+    target: profile_db
+    category: D
+    title: Denial of service against profile database availability
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t44
+    target: scoring_engine
+    category: S
+    title: Spoofing scoring engine internal microservice identity
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t45
+    target: scoring_engine
+    category: T
+    title: Tampering with scoring engine calculation algorithms
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t46
+    target: scoring_engine
+    category: R
+    title: Repudiation of automated scoring computation decisions
+    likelihood: 2
+    impact: 3
+    status: open
+  - id: t47
+    target: scoring_engine
+    category: I
+    title: Information disclosure from scoring engine memory state
+    likelihood: 2
+    impact: 4
+    status: open
+  - id: t48
+    target: scoring_engine
+    category: D
+    title: Denial of service overloading scoring engine worker nodes
+    likelihood: 3
+    impact: 4
+    status: open
+  - id: t49
+    target: scoring_engine
+    category: E
+    title: Elevation of privilege inside scoring engine execution context
+    likelihood: 2
+    impact: 5
+    status: open
